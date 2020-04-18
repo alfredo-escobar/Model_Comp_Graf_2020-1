@@ -24,9 +24,6 @@ def on_key(window, key, scancode, action, mods):
     if key == glfw.KEY_ESCAPE:
         sys.exit()
 
-    else:
-        print('Unknown key')
-
 
 def crearNave(R=0.5, G=0.5, B=0.5):
 
@@ -64,11 +61,8 @@ def crearNave(R=0.5, G=0.5, B=0.5):
     nave.childs += [alaIzq]
     nave.childs += [alaDer]
 
-    traslatedNave = sg.SceneGraphNode("traslatedNave")
-    traslatedNave.transform = tr.translate(0,0.3,0)
-    traslatedNave.childs += [nave]
+    return nave
 
-    return traslatedNave
 
 def demoNaves(N):
 
@@ -89,6 +83,35 @@ def demoNaves(N):
     return naves
 
 
+def moverPlayer(player_pos, velocidad, dt, width, height):
+
+    # Configurar modificador de velocidad según si la nave va en diagonal o no
+    if ((glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS)) \
+    or ((glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (glfw.get_key(window, glfw.KEY_S) == glfw.PRESS)) \
+    or ((glfw.get_key(window, glfw.KEY_D) == glfw.PRESS) and (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS)) \
+    or ((glfw.get_key(window, glfw.KEY_D) == glfw.PRESS) and (glfw.get_key(window, glfw.KEY_S) == glfw.PRESS)):
+        modificador = 0.707
+    else:
+        modificador = 1
+
+    limite = 50
+
+    # Cambiar la posición del jugador (dentro de los límites de la pantalla) según la tecla presionada
+    if (glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (player_pos[0] > (-width + limite)):
+        player_pos[0] -= velocidad * modificador * dt
+
+    if (glfw.get_key(window, glfw.KEY_D) == glfw.PRESS) and (player_pos[0] < (width - limite)):
+        player_pos[0] += velocidad * modificador * dt
+
+    if (glfw.get_key(window, glfw.KEY_S) == glfw.PRESS) and (player_pos[1] > (-height + limite)):
+        player_pos[1] -= velocidad * modificador * dt
+
+    if (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS) and (player_pos[1] < (height - limite)):
+        player_pos[1] += velocidad * modificador * dt
+
+    return player_pos    
+
+
 if __name__ == "__main__":
 
     # Initialize glfw
@@ -98,7 +121,7 @@ if __name__ == "__main__":
     width = 450
     height = 600
 
-    window = glfw.create_window(width, height, "Space War Alpha 1", None, None)
+    window = glfw.create_window(width, height, "Space War Alpha 2", None, None)
 
     if not window:
         glfw.terminate()
@@ -119,26 +142,37 @@ if __name__ == "__main__":
     glClearColor(0.0, 0.0, 0.1, 1.0)
 
     # Creating shapes on GPU memory
-    naves = demoNaves(3)
+    playerNave = sg.SceneGraphNode("playerNave")
+    playerNave.transform = tr.uniformScale(0.15)
+    playerNave.childs += [crearNave(0.2, 0.6, 1)]
 
     # Our shapes here are always fully painted
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+    t0 = glfw.get_time()
+    player_pos = [0,0]
+    velocidad = 700
 
     while not glfw.window_should_close(window):
         # Using GLFW to check for input events
         glfw.poll_events()
 
+        # Getting the time difference from the previous iteration
+        t1 = glfw.get_time()
+        dt = t1 - t0
+        t0 = t1
+
+        player_pos = moverPlayer(player_pos, velocidad, dt, width, height)
+
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT)
 
-        # Modificando la nave 2
-        nave1 = sg.findNode(naves, "naveEscalada1")
-        theta = -10 * glfw.get_time()
-        nave1.transform = np.matmul(tr.translate(0.0, 0.5 * np.sin(0.1 * theta), 0),
-                                    tr.uniformScale(1.5))
+        # Modificando la nave del jugador:
+        playerNave.transform = np.matmul(tr.translate(player_pos[0]/width,player_pos[1]/height,0),
+                                         tr.uniformScale(0.15))
 
         # Dibujar las naves
-        sg.drawSceneGraphNode(naves, pipeline, "transform")
+        sg.drawSceneGraphNode(playerNave, pipeline, "transform")
 
         # Once the render is done, buffers are swapped, showing only the complete scene.
         glfw.swap_buffers(window)

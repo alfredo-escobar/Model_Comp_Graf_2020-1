@@ -5,6 +5,7 @@ Daniel Calderon, CC3501, 2019-2
 vertices and indices for simple shapes
 """
 
+import numpy as np
 
 # A simple class container to store vertices and indices that define a shape
 class Shape:
@@ -356,6 +357,9 @@ def createTextureNormalsCube(image_filename):
          15,14,13,13,12,15, # X-
          19,18,17,17,16,19, # Y+
          20,21,22,22,23,20] # Y-
+    
+    return Shape(vertices, indices, image_filename)
+
 
 def createColorRombo(r, g, b, half=0):
 
@@ -375,4 +379,28 @@ def createColorRombo(r, g, b, half=0):
          2, 3, 0]
 
     return Shape(vertices, indices)
-    return Shape(vertices, indices, image_filename)
+
+
+def createColorPoligono(r, g, b, n):
+    
+    # Se crea vertexData con el vector central
+    vertexData = np.array([0, 0, 0, r, g, b], dtype=np.float32)
+
+    # Se agregan los vertices exteriores
+    for i in range(n):
+        angulo = i*2*(np.pi)/n + (np.pi)/2
+        newVertex = np.array([np.cos(angulo),np.sin(angulo), 0, r, g, b], dtype=np.float32)
+        vertexData = np.append(vertexData,newVertex)
+
+    # Se definen los triangulos por sus indices
+    indices = np.array([], dtype= np.uint32)
+
+    for i in range(n):
+        if (i+2) <= n:
+            newIndice = np.array([i+2,0,i+1], dtype= np.uint32)
+            indices = np.append(indices,newIndice)
+        else:
+            newIndice = np.array([1,0,i+1], dtype= np.uint32)
+            indices = np.append(indices,newIndice)
+
+    return Shape(vertexData, indices)

@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Space War Alpha 3
+Space War Alpha 4
 """
 
 import glfw
@@ -17,6 +17,12 @@ import easy_shaders as es
 
 #N = sys.argv[1]
 
+class Controller:
+    fillPolygon = True
+
+controller = Controller()
+
+
 def on_key(window, key, scancode, action, mods):
 
     if action != glfw.PRESS:
@@ -24,6 +30,9 @@ def on_key(window, key, scancode, action, mods):
 
     if key == glfw.KEY_ESCAPE:
         sys.exit()
+
+    if key == glfw.KEY_0:
+        controller.fillPolygon = not controller.fillPolygon
 
 
 def crearNave(R=0.5, G=0.5, B=0.5):
@@ -66,23 +75,6 @@ def crearNave(R=0.5, G=0.5, B=0.5):
     return nave
 
 
-def demoNaves(N):
-
-    naveEscalada = sg.SceneGraphNode("naveEscalada")
-    naveEscalada.childs += [crearNave(0, 1, 0)] # Re-using the previous function
-
-    naves = sg.SceneGraphNode("nave")
-
-    baseName = "naveEscalada"
-    for i in range(N):
-        newNode = sg.SceneGraphNode(baseName + str(i))
-        newNode.transform = tr.translate(0.7 * i - 0.7, 0, 0)
-        newNode.childs += [naveEscalada]
-        naves.childs += [newNode]
-
-    return naves
-
-
 def crearEnemigos(N):
 
     naveRotada = sg.SceneGraphNode("naveRotada")
@@ -94,8 +86,7 @@ def crearEnemigos(N):
     baseName = "enemigo"
     for i in range(N):
         newNode = sg.SceneGraphNode(baseName + str(i))
-        newNode.transform = tr.translate(0.7 * i - 0.7, 0.7, 0)
-##        newNode.transform = tr.translate(0, 1.2, 0) # Se crean fuera de la pantalla
+        newNode.transform = tr.translate(0, 1.2, 0) # Se crean fuera de la pantalla
         newNode.childs += [naveRotada]
         navesEnemigas.childs += [newNode]
 
@@ -147,7 +138,7 @@ def variosPlanetas(N = 5):
 
 def variasEstrellas(N = 15):
 
-    lados = 15
+    lados = 10
     gpuBlancoCirculo = es.toGPUShape(bs.createColorPoligono(1, 1, 1, lados))
 
     estrellas = sg.SceneGraphNode("estrellas")
@@ -166,7 +157,7 @@ def variasEstrellas(N = 15):
     return estrellas
 
 
-def moverPlayer(player_pos, velocidad, dt, width, height):
+def moverPlayer(player_pos, velocidad, dt):
 
     # Configurar modificador de velocidad según si la nave va en diagonal o no
     if ((glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS)) \
@@ -177,26 +168,44 @@ def moverPlayer(player_pos, velocidad, dt, width, height):
     else:
         modificador = 1
 
-    limite = 50
+    limite = 0.1
 
     # Cambiar la posición del jugador (dentro de los límites de la pantalla) según la tecla presionada
-    if (glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (player_pos[0] > (-width + limite)):
+    if (glfw.get_key(window, glfw.KEY_A) == glfw.PRESS) and (player_pos[0] > (-1 + limite)):
         player_pos[0] -= velocidad * modificador * dt
 
-    if (glfw.get_key(window, glfw.KEY_D) == glfw.PRESS) and (player_pos[0] < (width - limite)):
+    if (glfw.get_key(window, glfw.KEY_D) == glfw.PRESS) and (player_pos[0] < (1 - limite)):
         player_pos[0] += velocidad * modificador * dt
 
-    if (glfw.get_key(window, glfw.KEY_S) == glfw.PRESS) and (player_pos[1] > (-height + limite)):
-        player_pos[1] -= velocidad * modificador * dt
+    if (glfw.get_key(window, glfw.KEY_S) == glfw.PRESS) and (player_pos[1] > (-1 + limite)):
+        player_pos[1] -= velocidad * modificador * dt * 3/4
 
-    if (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS) and (player_pos[1] < (height - limite)):
-        player_pos[1] += velocidad * modificador * dt
+    if (glfw.get_key(window, glfw.KEY_W) == glfw.PRESS) and (player_pos[1] < (1 - limite)):
+        player_pos[1] += velocidad * modificador * dt * 3/4
 
     return player_pos    
 
 
-def moverEnemigo():
-    return
+def moverEnemigos(rojos_vars, velocidad, dt):
+    for r in range(len(rojos_vars)):
+        if (rojos_vars[r][0][0] < -1.3) or (rojos_vars[r][0][0] > 1.3) \
+           or ((rojos_vars[r][0][1] < -1.3) and (rojos_vars[r][0][1] > -2)):
+               
+            posX = random()*2 -1
+            amplitud = 0.75 # Rango de direcciones posibles. Valor entre 0 y 1
+            angulo = np.pi * (random()*amplitud + (1 - amplitud)/2)
+            dirX = np.cos(angulo)
+            dirY = np.sin(angulo)*-3/4
+
+            rojos_vars[r] = [[posX, 1.1], [dirX, dirY]]
+
+        else:
+            dirX = rojos_vars[r][1][0]
+            dirY = rojos_vars[r][1][1]
+            rojos_vars[r][0][0] += dt * dirX * velocidad
+            rojos_vars[r][0][1] += dt * dirY * velocidad
+               
+    return rojos_vars
 
 
 if __name__ == "__main__":
@@ -204,11 +213,11 @@ if __name__ == "__main__":
     # Initialize glfw
     if not glfw.init():
         sys.exit()
-
+        
     width = 450
     height = 600
 
-    window = glfw.create_window(width, height, "Space War Alpha 3", None, None)
+    window = glfw.create_window(width, height, "Space War Alpha 4", None, None)
 
     if not window:
         glfw.terminate()
@@ -232,7 +241,8 @@ if __name__ == "__main__":
     playerNave = sg.SceneGraphNode("playerNave")
     playerNave.childs += [crearNave(0.2, 0.6, 1)]
 
-    navesEnemigas = crearEnemigos(3)
+    rojosEnPantalla = 3
+    navesEnemigas = crearEnemigos(rojosEnPantalla)
 
     planetasA = variosPlanetas()
     planetasB = variosPlanetas()
@@ -245,16 +255,32 @@ if __name__ == "__main__":
 
     # Variables iniciales
     t0 = glfw.get_time()
-    velocidad = 700
-    player_pos = [0,-400] # Posición del jugador
+    velocidadA = 1.55 # Afecta al jugador y al fondo
+    velocidadB = 1.3 # Afecta a los enemigos
+    
+    player_pos = [0,-0.6] # Posición del jugador
     planA_posY = 0 # Posición vertical del grupo de planetas A
     planB_posY = 6 # Posición vertical del grupo de planetas B
     estrA_posY = 0 # Posición vertical del grupo de estrellas A
     estrB_posY = 6 # Posición vertical del grupo de estrellas B
 
+    # Lista de 3 dimensiones que indica posición y dirección de los enemigos
+    rojos_vars = [] 
+    for r in range(rojosEnPantalla):
+        #                  posX posY dirX dirY
+        rojos_vars.append([[0, -1.5], [0, 0]])
+#    rojos_vars[0][0] = [0, -1.5]
+
+
     while not glfw.window_should_close(window):
         # Using GLFW to check for input events
         glfw.poll_events()
+
+        # Filling or not the shapes
+        if (controller.fillPolygon):
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        else:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
         # Getting the time difference from the previous iteration
         t1 = glfw.get_time()
@@ -262,28 +288,34 @@ if __name__ == "__main__":
         t0 = t1
 
         # Modificando variables de posiciones:
-        player_pos = moverPlayer(player_pos, velocidad, dt, width, height)
+        player_pos = moverPlayer(player_pos, velocidadA, dt)
+        rojos_vars = moverEnemigos(rojos_vars, velocidadB, dt)
 
-        planA_posY -= dt * velocidad/350
+        planA_posY -= dt * velocidadA * 1.3
         if planA_posY <= -6:
             planA_posY = 6
-        planB_posY -= dt * velocidad/350
+        planB_posY -= dt * velocidadA * 1.3
         if planB_posY <= -6:
             planB_posY = 6
 
-        estrA_posY -= dt * velocidad/1000
+        estrA_posY -= dt * velocidadA * 0.45
         if estrA_posY <= -6:
             estrA_posY = 6
-        estrB_posY -= dt * velocidad/1000
+        estrB_posY -= dt * velocidadA * 0.45
         if estrB_posY <= -6:
             estrB_posY = 6
 
         # Modificando transformadas de traslación:
-        playerNave.transform = tr.translate(player_pos[0]/width, player_pos[1]/height, 0)
+        playerNave.transform = tr.translate(player_pos[0], player_pos[1], 0)
         planetasA.transform = tr.translate(0, planA_posY, 0)
         planetasB.transform = tr.translate(0, planB_posY, 0)
         estrellasA.transform = tr.translate(0, estrA_posY, 0)
         estrellasB.transform = tr.translate(0, estrB_posY, 0)
+
+        for r in range(rojosEnPantalla):
+            enemigo = sg.findNode(navesEnemigas, "enemigo"+str(r))
+            enemigo.transform = tr.translate(rojos_vars[r][0][0], rojos_vars[r][0][1], 0)
+            
 
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT)
@@ -296,9 +328,8 @@ if __name__ == "__main__":
         sg.drawSceneGraphNode(navesEnemigas, pipeline, "transform")
         sg.drawSceneGraphNode(playerNave, pipeline, "transform")
 
-
         # Once the render is done, buffers are swapped, showing only the complete scene.
         glfw.swap_buffers(window)
 
-    
+
     glfw.terminate()

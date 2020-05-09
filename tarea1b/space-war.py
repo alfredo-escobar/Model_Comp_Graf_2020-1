@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Space War Beta 1
+Space War Beta 2
 Alfredo Escobar
 CC3501-1
 """
@@ -112,7 +112,8 @@ def moverLasers(lasers_vars, player_pos, rojos_vars, dt, rojosEnPantalla):
             lasers_vars[0][i][1] += 4 * dt
             # Colisión láser-enemigo
             for j in range(rojosEnPantalla):
-                if (abs(rojos_vars[j][0][0] - lasers_vars[0][i][0]) < 0.18) \
+                if (rojos_vars[j][0][1] < 0.95) \
+                   and (abs(rojos_vars[j][0][0] - lasers_vars[0][i][0]) < 0.18) \
                    and (abs(rojos_vars[j][0][1] - lasers_vars[0][i][1]) < 0.165):
                     controller.enemigosTotal -= 1
                     lasers_vars[0][i][1] = 2.5
@@ -193,7 +194,7 @@ if __name__ == "__main__":
     width = 450
     height = 600
 
-    window = glfw.create_window(width, height, "Space War Beta 1", None, None)
+    window = glfw.create_window(width, height, "Space War Beta 2", None, None)
 
     if not window:
         glfw.terminate()
@@ -231,7 +232,7 @@ if __name__ == "__main__":
     navesEnemigas = variosEnemigos(rojosEnPantalla)
 
     ## Escenario
-    densidadFondo = 2 # Determina la cantidad de planetas (x2) y estrellas (x6)
+    densidadFondo = 3 # Determina la cantidad de planetas (x2) y estrellas (x6)
     detalleFondo = 10 # Determina los lados de los planetas (x2) y las estrellas (x1)
     
     planetasA = variosPlanetas(densidadFondo, detalleFondo*2)
@@ -295,7 +296,8 @@ if __name__ == "__main__":
         t0 = t1
         
         # Aparición de más enemigos en pantalla
-        if (rojos_spawn[0] < rojosEnPantalla) and (controller.reloj >= rojos_spawn[1]):
+        if (rojos_spawn[0] < min(rojosEnPantalla, controller.enemigosTotal)) \
+            and (controller.reloj >= rojos_spawn[1]) and (controller.enemigosTotal > 0):
             rojos_vars[rojos_spawn[0]][0][1] = -1.5
             rojos_spawn[0] += 1
             rojos_spawn[1] += 5 # Intervalo de aparición

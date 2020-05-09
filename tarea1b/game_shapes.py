@@ -93,7 +93,6 @@ def crearEnemigo(R=1, G=0, B=0):
     barra.childs += [gpuColorQuad]
     
     centro = sg.SceneGraphNode("centro")
-    centro.transform = tr.translate(0,0,0)
     centro.childs += [gpuGrayRombo]
 
     # Ensamblando la nave completa
@@ -219,3 +218,22 @@ def variosLasers(N):
             lasers.childs += [newNode]
 
     return lasers
+
+
+def barraVida(r, g, b):
+    gpuColorQuad = es.toGPUShape(bs.createColorQuad(r, g, b))
+
+    scaledColorQuad = sg.SceneGraphNode("scaledColorQuad")
+    scaledColorQuad.transform = tr.uniformScale(0.06)
+    scaledColorQuad.childs += [gpuColorQuad]
+
+    barraHP = sg.SceneGraphNode("barraHP")
+    
+    baseName = "cuadroHP"
+    for i in range(3):
+        newNode = sg.SceneGraphNode(baseName + str(i))
+        newNode.transform = tr.translate(-0.78 + i*0.07, 0.9, 0)
+        newNode.childs += [scaledColorQuad]
+        barraHP.childs += [newNode]
+
+    return barraHP

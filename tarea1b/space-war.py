@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Space War Alpha 5
+Space War Beta 1
 Alfredo Escobar
 CC3501-1
 """
@@ -18,13 +18,15 @@ import scene_graph as sg
 import easy_shaders as es
 from game_shapes import *
 
-#N = sys.argv[1]
+N = int(sys.argv[1])
 
 class Controller:
     def __init__(self):
-        self.fillPolygon = True
         self.disparando = False
         self.reloj = 0
+        self.vidas = 3
+        self.playerHit = False
+        self.enemigosTotal = N
 
 controller = Controller()
 
@@ -39,9 +41,6 @@ def on_key(window, key, scancode, action, mods):
 
     if key == glfw.KEY_SPACE:
         controller.disparando = True
-
-    if key == glfw.KEY_0:
-        controller.fillPolygon = not controller.fillPolygon
 
 
 def moverPlayer(player_pos, velocidad, dt):
@@ -84,52 +83,103 @@ def moverEnemigos(rojos_vars, velocidad, dt):
             dirX = np.cos(angulo)
             dirY = np.sin(angulo)*-3/4
 
-            rojos_vars[r] = [[posX, 1.1], [dirX, dirY]]
+            rojos_vars[r] = [[posX, 1.05], [dirX, dirY]]
 
-        else:
+        elif (rojos_vars[r][0][1] > -2):
             dirX = rojos_vars[r][1][0]
             dirY = rojos_vars[r][1][1]
             rojos_vars[r][0][0] += dt * dirX * velocidad
             rojos_vars[r][0][1] += dt * dirY * velocidad
+
+            # Colisión enemigo-jugador
+            if (((rojos_vars[r][0][1] - player_pos[1]) < 0.2) \
+               and ((rojos_vars[r][0][1] - player_pos[1]) >= 0.05) \
+               and (abs(rojos_vars[r][0][0] - player_pos[0]) < 0.14)) \
+               or (((rojos_vars[r][0][1] - player_pos[1]) < 0.05) \
+               and ((player_pos[1] - rojos_vars[r][0][1]) < 0.205) \
+               and (abs(rojos_vars[r][0][0] - player_pos[0]) < 0.24)):
+                rojos_vars[r][0][1] = -1.5
+                controller.playerHit = True
                
     return rojos_vars
 
 
 def moverLasers(lasers_vars, player_pos, rojos_vars, dt, rojosEnPantalla):
-    global controller
 
-    # LASERS DEL JUGADOR
-    for i in range(1,6): # Cada laser del jugador
+    # Avance de los láseres del jugador
+    for i in range(1,6): # Cada láser del jugador
         if lasers_vars[0][i][1] < 2:
             lasers_vars[0][i][1] += 4 * dt
+            # Colisión láser-enemigo
+            for j in range(rojosEnPantalla):
+                if (abs(rojos_vars[j][0][0] - lasers_vars[0][i][0]) < 0.18) \
+                   and (abs(rojos_vars[j][0][1] - lasers_vars[0][i][1]) < 0.165):
+                    controller.enemigosTotal -= 1
+                    lasers_vars[0][i][1] = 2.5
+                    if (controller.enemigosTotal < rojosEnPantalla):
+                        rojos_vars[j][0][1] = -2.5
+                    else:
+                        rojos_vars[j][0][1] = -1.5
+                        
+    # Disparo del láser preparado del jugador
     if (controller.disparando == True):
         laserADisparar = lasers_vars[0][0] +1
-        # El laser tomará la posición del jugador
+        # El láser tomará la posición del jugador
         posX = player_pos[0]
         posY = player_pos[1]
         lasers_vars[0][laserADisparar] = [posX,posY]
-        # Se prepara el siguiente laser del jugador
+        # Se prepara el siguiente láser del jugador
         lasers_vars[0][0] = laserADisparar % 5
         # Se modifica el controlador
         controller.disparando = False
 
-    # LASERS DE LOS ENEMIGOS
     for i in range(1,rojosEnPantalla+1): # Set de datos de cada enemigo
-        for j in range(1,4): # Cada laser del enemigo "i"
+        
+        # Avance de los láseres del enemigo "i"
+        for j in range(1,4): # Cada láser del enemigo "i"
             if lasers_vars[i][j][1] > -2:
                 lasers_vars[i][j][1] -= 2 * dt
+                # Colisión láser-jugador
+                if (((lasers_vars[i][j][1] - player_pos[1]) < 0.165) \
+                   and ((lasers_vars[i][j][1] - player_pos[1]) >= 0.025) \
+                   and (abs(lasers_vars[i][j][0] - player_pos[0]) < 0.06)) \
+                   or (((lasers_vars[i][j][1] - player_pos[1]) < 0.025) \
+                   and ((player_pos[1] - lasers_vars[i][j][1]) < 0.17) \
+                   and (abs(lasers_vars[i][j][0] - player_pos[0]) < 0.17)):
+                    lasers_vars[i][j][1] = -2.5
+                    controller.playerHit = True
+        
+        # Disparo del láser preparado del enemigo "i"
         if controller.reloj >= lasers_vars[i][0][1]: # Momento de disparar
             laserADisparar = lasers_vars[i][0][0] +1
-            # El laser tomará la posición del enemigo "i"
+            # El láser tomará la posición del enemigo "i"
             posX = rojos_vars[i-1][0][0]
             posY = rojos_vars[i-1][0][1]
             lasers_vars[i][laserADisparar] = [posX,posY]
-            # Se prepara el siguiente laser de "i"
+            # Se prepara el siguiente láser de "i"
             lasers_vars[i][0][0] = laserADisparar % 3
             # Se define el momento del siguiente disparo
             lasers_vars[i][0][1] += 0.8 # Intervalo de disparo
 
     return lasers_vars
+
+
+def gameProgress(barraHP, tex_Y, dt):
+    if (controller.playerHit == True) and (controller.vidas > 0):
+        controller.vidas -= 1
+        cuadroHP = sg.findNode(barraHP, "cuadroHP"+str(controller.vidas))
+        cuadroHP.transform = tr.translate(0, 1.1, 0)
+        controller.playerHit = False
+
+    if controller.vidas <= 0:
+        if tex_Y < 0:
+            tex_Y += 2*dt
+
+    elif controller.enemigosTotal <= 0:
+        if tex_Y < 0:
+            tex_Y += 2*dt
+
+    return tex_Y
 
 
 # Inicio del programa --------------------------------------------------------
@@ -143,7 +193,7 @@ if __name__ == "__main__":
     width = 450
     height = 600
 
-    window = glfw.create_window(width, height, "Space War Alpha 5", None, None)
+    window = glfw.create_window(width, height, "Space War Beta 1", None, None)
 
     if not window:
         glfw.terminate()
@@ -156,23 +206,32 @@ if __name__ == "__main__":
 
     # Assembling the shader program (pipeline) with both shaders
     pipeline = es.SimpleTransformShaderProgram()
-    
-    # Telling OpenGL to use our shader program
-    glUseProgram(pipeline.shaderProgram)
+    pipeline2 = es.SimpleTextureTransformShaderProgram()
 
     # Setting up the clear screen color
     glClearColor(0.0, 0.0, 0.1, 1.0)
 
+    # Enabling transparencies
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
     # Creating shapes on GPU memory
     ## Naves
+    azulNave = sg.SceneGraphNode("azulNave")
+    azulNave.childs += [crearNave(0.2, 0.6, 1)]
+
     playerNave = sg.SceneGraphNode("playerNave")
-    playerNave.childs += [crearNave(0.2, 0.6, 1)]
+    playerNave.childs += [azulNave]
+
+    playerIcon = sg.SceneGraphNode("playerIcon")
+    playerIcon.transform = np.matmul(tr.translate(-0.9,0.9,0),tr.uniformScale(0.4))
+    playerIcon.childs += [azulNave]
 
     rojosEnPantalla = 3 # Máximo de enemigos simultáneamente en pantalla
     navesEnemigas = variosEnemigos(rojosEnPantalla)
 
     ## Escenario
-    densidadFondo = 3 # Determina la cantidad de planetas (x2) y estrellas (x6)
+    densidadFondo = 2 # Determina la cantidad de planetas (x2) y estrellas (x6)
     detalleFondo = 10 # Determina los lados de los planetas (x2) y las estrellas (x1)
     
     planetasA = variosPlanetas(densidadFondo, detalleFondo*2)
@@ -184,6 +243,11 @@ if __name__ == "__main__":
     ## Disparos
     lasers = variosLasers(rojosEnPantalla)
 
+    ## Otros (UI)
+    barraHP = barraVida(0.2, 0.6, 1)
+    gpuWin = es.toGPUShape(bs.createTextureQuad("sprite1.png"), GL_REPEAT, GL_NEAREST)
+    gpuLose = es.toGPUShape(bs.createTextureQuad("sprite2.png"), GL_REPEAT, GL_NEAREST)
+
     # Our shapes here are always fully painted
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
@@ -192,6 +256,7 @@ if __name__ == "__main__":
     abc = ["A","B","C","D","E","F","G"]
     velocidadA = 1.55 # Afecta al jugador y al fondo
     velocidadB = 1.3 # Afecta a los enemigos
+    tex_Y = -1.2 # Posición en Y de las texturas
     
     player_pos = [0,-0.6] # Posición del jugador
     planA_posY = 0 # Posición vertical del grupo de planetas A
@@ -204,8 +269,11 @@ if __name__ == "__main__":
     rojos_vars = [[[0, -1.5], [0, 0]]] # Valores para el primer enemigo
     for r in range(rojosEnPantalla-1):
         #               [[posX,posY],[dirX,dirY]]
-        rojos_vars.append([[0, -1.5], [0, 0]])
+        rojos_vars.append([[0, -2.5], [0, 0]])
 
+    # Controlador de aparición de enemigos ([sgteEnemigo, momentoDeAparicion]
+    rojos_spawn = [1, 5] 
+    
     # Lista de 3 dimensiones que indica laser en uso y posición de los lasers
     ##    [laserEnUso,posLaserA,posLaserB,posLaserC,posLaserD,posLaserE]
     lasers_vars = [[0, [0, 2.5], [0, 2.5], [0, 2.5], [0, 2.5], [0, 2.5]]]
@@ -220,18 +288,18 @@ if __name__ == "__main__":
         # Using GLFW to check for input events
         glfw.poll_events()
 
-        # Filling or not the shapes
-        if (controller.fillPolygon):
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        else:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
         # Getting the time difference from the previous iteration
         t1 = glfw.get_time()
         controller.reloj = t1
         dt = t1 - t0
         t0 = t1
-
+        
+        # Aparición de más enemigos en pantalla
+        if (rojos_spawn[0] < rojosEnPantalla) and (controller.reloj >= rojos_spawn[1]):
+            rojos_vars[rojos_spawn[0]][0][1] = -1.5
+            rojos_spawn[0] += 1
+            rojos_spawn[1] += 5 # Intervalo de aparición
+        
         # Modificando variables de posiciones:
         player_pos = moverPlayer(player_pos, velocidadA, dt)
         rojos_vars = moverEnemigos(rojos_vars, velocidadB, dt)
@@ -274,7 +342,10 @@ if __name__ == "__main__":
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT)
 
+        tex_Y = gameProgress(barraHP, tex_Y, dt)
+
         # Dibujando los nodos
+        glUseProgram(pipeline.shaderProgram)
         sg.drawSceneGraphNode(estrellasA, pipeline, "transform")
         sg.drawSceneGraphNode(estrellasB, pipeline, "transform")
         sg.drawSceneGraphNode(planetasA, pipeline, "transform")
@@ -282,6 +353,24 @@ if __name__ == "__main__":
         sg.drawSceneGraphNode(lasers, pipeline, "transform")
         sg.drawSceneGraphNode(navesEnemigas, pipeline, "transform")
         sg.drawSceneGraphNode(playerNave, pipeline, "transform")
+        sg.drawSceneGraphNode(playerIcon, pipeline, "transform")
+        sg.drawSceneGraphNode(barraHP, pipeline, "transform")
+        
+        # Dibujando las texturas
+        if controller.vidas <= 0:
+            glUseProgram(pipeline2.shaderProgram)
+            glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul([
+                    tr.translate(0, tex_Y, 0),
+                    tr.scale(1.0, 0.141, 1.0)]))
+            pipeline2.drawShape(gpuLose)
+            
+        elif controller.enemigosTotal <= 0:
+            glUseProgram(pipeline2.shaderProgram)
+            glUniformMatrix4fv(glGetUniformLocation(pipeline2.shaderProgram, "transform"), 1, GL_TRUE, tr.matmul([
+                    tr.translate(0, tex_Y, 0),
+                    tr.scale(1.0, 0.149, 1.0)]))
+            pipeline2.drawShape(gpuWin)
+        
 
         # Once the render is done, buffers are swapped, showing only the complete scene.
         glfw.swap_buffers(window)

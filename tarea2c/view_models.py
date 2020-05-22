@@ -11,6 +11,7 @@ import sys
 
 import transformations as tr
 import basic_shapes as bs
+import scene_graph as sg
 import easy_shaders as es
 import lighting_shaders as ls
 import local_shapes as locs
@@ -28,6 +29,7 @@ SHAPE_ALA_PUNTA = 3
 SHAPE_COLA      = 4
 SHAPE_CABEZA    = 5
 SHAPE_PICO      = 6
+SHAPE_AVE       = 7
 
 
 # A class to store the application control
@@ -36,7 +38,7 @@ class Controller:
         self.fillPolygon = True
         self.showAxis = True
         self.lightingModel = LIGHT_PHONG
-        self.shape = SHAPE_CUERPO
+        self.shape = SHAPE_AVE
 
 
 # We will use the global controller as communication with the callback function
@@ -84,6 +86,9 @@ def on_key(window, key, scancode, action, mods):
 
     elif key == glfw.KEY_7:
         controller.shape = SHAPE_PICO
+
+    elif key == glfw.KEY_8:
+        controller.shape = SHAPE_AVE
 
     elif key == glfw.KEY_ESCAPE:
         sys.exit()
@@ -133,6 +138,7 @@ if __name__ == "__main__":
     gpuCola = es.toGPUShape(locs.cola([0.1,0.6,1]))
     gpuCabeza = es.toGPUShape(locs.generateSphereShape([0.1,0.6,1]))
     gpuPico = es.toGPUShape(locs.pico([0.1,0.6,1]))
+    sgnAve = locs.crearAve()
 
     t0 = glfw.get_time()
     camera_theta = -2
@@ -240,6 +246,8 @@ if __name__ == "__main__":
             gpuShape = gpuCabeza
         elif controller.shape == SHAPE_PICO:
             gpuShape = gpuPico
+        elif controller.shape == SHAPE_AVE:
+            gpuShape = gpuPico
         else:
             raise Exception()
 
@@ -282,7 +290,10 @@ if __name__ == "__main__":
         glUniformMatrix4fv(glGetUniformLocation(lightingPipeline.shaderProgram, "model"), 1, GL_TRUE, model)
 
         # Drawing
-        lightingPipeline.drawShape(gpuShape)
+        if controller.shape == SHAPE_AVE:
+            sg.drawSceneGraphNode(sgnAve, lightingPipeline, "model")
+        else:
+            lightingPipeline.drawShape(gpuShape)
         
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

@@ -1,7 +1,10 @@
 # coding=utf-8
 
 import numpy as np
+import transformations as tr
 import basic_shapes as bs
+import scene_graph as sg
+import easy_shaders as es
 
 def createColorTriangleIndexation(start_index, a, b, c, color):
     # Defining locations and colors for each vertex of the shape    
@@ -97,15 +100,15 @@ def birdBody(color):
     indices = []
     start_index = 0
 
-    a = np.array([0, 0.7, 0])
+    a = np.array([0, 1, 0])
     b = np.array([-0.4, 0, 0])
     c = np.array([0, 0, 0.3])
     d = np.array([0.4, 0, 0])
     e = np.array([0, 0, -0.3])
-    f = np.array([-0.2, -0.7, 0.1])
-    g = np.array([0.2, -0.7, 0.1])
-    h = np.array([0.2, -0.7, -0.1])
-    i = np.array([-0.2, -0.7, -0.1])
+    f = np.array([-0.2, -0.8, 0.05])
+    g = np.array([0.2, -0.8, 0.05])
+    h = np.array([0.2, -0.8, -0.05])
+    i = np.array([-0.2, -0.8, -0.05])
     
     triangulos = [[a,b,c], [a,c,d], [a,d,e], [a,e,b],
                   [c,b,f], [c,f,g], [c,g,d], [e,d,h],
@@ -216,12 +219,12 @@ def cola(color):
     indices = []
     start_index = 0
 
-    a = np.array([0.2, 0.05, 0.1])
-    b = np.array([-0.2, 0.05, 0.1])
-    c = np.array([-0.3,-0.4,0])
-    d = np.array([0.3,-0.4,0])
-    e = np.array([0.2, 0.05, -0.1])
-    f = np.array([-0.2, 0.05, -0.1])
+    a = np.array([0.2, 0.05, 0.05])
+    b = np.array([-0.2, 0.05, 0.05])
+    c = np.array([-0.3,-0.5,0])
+    d = np.array([0.3,-0.5,0])
+    e = np.array([0.2, 0.05, -0.05])
+    f = np.array([-0.2, 0.05, -0.05])
 
     cuadrilateros = [[a,b,c,d], [b,a,e,f], [f,e,d,c]]
     triangulos = [[a,d,e], [b,f,c]]
@@ -244,8 +247,8 @@ def cola(color):
 
 
 def generateSphereShape(color):
-    nTheta = 10
-    nPhi = 10
+    nTheta = 5
+    nPhi = 5
     vertices = []
     indices = []
 
@@ -298,11 +301,11 @@ def pico(color):
     indices = []
     start_index = 0
 
-    a = np.array([0.2, -0.1, 0.1])
-    b = np.array([0, 0.4, 0])
-    c = np.array([-0.2, -0.1, 0.1])
-    d = np.array([0.2, -0.1, -0.1])
-    e = np.array([-0.2, -0.1, -0.1])
+    a = np.array([0.07, -0.1, 0.07])
+    b = np.array([0, 0.2, 0])
+    c = np.array([-0.07, -0.1, 0.07])
+    d = np.array([0.07, -0.1, -0.07])
+    e = np.array([-0.07, -0.1, -0.07])
 
     triangulos = [[a,b,c], [c,b,e], [e,b,d], [d,b,a]]
 
@@ -318,3 +321,75 @@ def pico(color):
     indices  += _indices
 
     return bs.Shape(vertices, indices)
+
+
+def crearAve():
+
+    color1 = [70/255, 205/255, 195/255]
+    color2 = [50/255, 185/255, 175/255]
+    color3 = [30/255, 165/255, 155/255]
+    gris = [0.2, 0.2, 0.2]
+
+    # GPU Shapes
+    gpuBirdBody = es.toGPUShape(birdBody(color1))
+    gpuAlaBase = es.toGPUShape(alaBase(color2))
+    gpuAlaMedio = es.toGPUShape(alaMedio(color3))
+    gpuAlaPunta = es.toGPUShape(alaPunta(gris))
+    gpuCola = es.toGPUShape(cola(gris))
+    gpuCabeza = es.toGPUShape(generateSphereShape(color1))
+    gpuPico = es.toGPUShape(pico([0.1,0.1,0.1]))
+
+    # Scene Graph Nodes
+    sgnBirdBody = sg.SceneGraphNode("birdBody")
+    sgnBirdBody.childs += [gpuBirdBody]
+
+    sgnAlaPunta = sg.SceneGraphNode("alaPunta")
+    sgnAlaPunta.transform = tr.translate(-0.7,-0.001,-0.001)
+    sgnAlaPunta.childs += [gpuAlaPunta]
+
+    sgnAlaMedio = sg.SceneGraphNode("alaMedio")
+    sgnAlaMedio.childs += [gpuAlaMedio]
+
+    sgnAlaBase = sg.SceneGraphNode("alaBase")
+    sgnAlaBase.childs += [gpuAlaBase]
+
+    sgnCola = sg.SceneGraphNode("cola")
+    sgnCola.transform = tr.translate(0,-0.8,0)
+    sgnCola.childs += [gpuCola]
+
+    sgnCabeza = sg.SceneGraphNode("cabeza")
+    sgnCabeza.transform = tr.matmul([tr.translate(0,0.7,0),tr.uniformScale(0.3)])
+    sgnCabeza.childs += [gpuCabeza]
+
+    sgnPico = sg.SceneGraphNode("pico")
+    sgnPico.transform = tr.translate(0,1,0)
+    sgnPico.childs += [gpuPico]
+
+    sgnAlaExt = sg.SceneGraphNode("alaExt")
+    sgnAlaExt.transform = tr.translate(-0.7,-0.001,-0.001)
+    sgnAlaExt.childs += [sgnAlaPunta]
+    sgnAlaExt.childs += [sgnAlaMedio]
+
+    sgnAlaCompleta = sg.SceneGraphNode("alaCompleta")
+    sgnAlaCompleta.transform = tr.identity()
+    sgnAlaCompleta.childs += [sgnAlaExt]
+    sgnAlaCompleta.childs += [sgnAlaBase]
+
+    sgnAlaIzq = sg.SceneGraphNode("alaIzq")
+    sgnAlaIzq.transform = tr.translate(-0.1,0,0)
+    sgnAlaIzq.childs += [sgnAlaCompleta]
+
+    sgnAlaDer = sg.SceneGraphNode("alaDer")
+    sgnAlaDer.transform = tr.matmul([tr.translate(0.1,0,0),tr.scale(-1,1,1)])
+    sgnAlaDer.childs += [sgnAlaCompleta]
+
+    sgnAve =  sg.SceneGraphNode("ave")
+    sgnAve.childs += [sgnBirdBody]
+    sgnAve.childs += [sgnAlaIzq]
+    sgnAve.childs += [sgnAlaDer]
+    sgnAve.childs += [sgnCola]
+    sgnAve.childs += [sgnCabeza]
+    sgnAve.childs += [sgnPico]
+
+    return sgnAve
+    

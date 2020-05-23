@@ -135,14 +135,14 @@ def alaBase(color):
     indices = []
     start_index = 0
 
-    a = np.array([0.1, 0.4, 0.1])
+    a = np.array([0, 0.4, 0.1])
     b = np.array([-0.7, 0.4, 0.1])
     c = np.array([-0.7, -0.2, 0.1])
-    d = np.array([0.1, -0.4, 0.1])
-    e = np.array([0.1, 0.4, -0.1])
+    d = np.array([0, -0.4, 0.1])
+    e = np.array([0, 0.4, -0.1])
     f = np.array([-0.7, 0.4, -0.04])
     g = np.array([-0.7, -0.2, -0.04])
-    h = np.array([0.1, -0.4, -0.1])
+    h = np.array([0, -0.4, -0.1])
 
     cuadrilateros = [[a,b,c,d], [a,e,f,b], [b,f,g,c],
                      [c,g,h,d], [d,h,e,a], [e,h,g,f]]
@@ -163,14 +163,14 @@ def alaMedio(color):
     indices = []
     start_index = 0
 
-    a = np.array([0.1, 0.4, 0.1])
+    a = np.array([0, 0.4, 0.1])
     b = np.array([-0.7, 0.4, 0.1])
     c = np.array([-0.7, 0.05, 0.1])
-    d = np.array([0.1, -0.2, 0.1])
-    e = np.array([0.1, 0.4, -0.04])
+    d = np.array([0, -0.2, 0.1])
+    e = np.array([0, 0.4, -0.04])
     f = np.array([-0.7, 0.4, 0.01])
     g = np.array([-0.7, 0.05, 0.01])
-    h = np.array([0.1, -0.2, -0.04])
+    h = np.array([0, -0.2, -0.04])
 
     cuadrilateros = [[a,b,c,d], [a,e,f,b], [b,f,g,c],
                      [c,g,h,d], [d,h,e,a], [e,h,g,f]]
@@ -191,11 +191,11 @@ def alaPunta(color):
     indices = []
     start_index = 0
 
-    a = np.array([0.1, 0.4, 0.1])
+    a = np.array([0, 0.4, 0.1])
     b = np.array([-0.7, 0.4, 0.1])
-    c = np.array([0.1, 0.05, 0.1])
-    d = np.array([0.1, 0.4, 0.01])
-    e = np.array([0.1, 0.05, 0.01])
+    c = np.array([0, 0.05, 0.1])
+    d = np.array([0, 0.4, 0.01])
+    e = np.array([0, 0.05, 0.01])
 
     triangulos = [[a,b,c], [c,b,e], [e,b,d], [d,b,a]]
 
@@ -344,7 +344,7 @@ def crearAve():
     sgnBirdBody.childs += [gpuBirdBody]
 
     sgnAlaPunta = sg.SceneGraphNode("alaPunta")
-    sgnAlaPunta.transform = tr.translate(-0.7,-0.001,-0.001)
+    sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(0)])#<-rot1
     sgnAlaPunta.childs += [gpuAlaPunta]
 
     sgnAlaMedio = sg.SceneGraphNode("alaMedio")
@@ -366,12 +366,12 @@ def crearAve():
     sgnPico.childs += [gpuPico]
 
     sgnAlaExt = sg.SceneGraphNode("alaExt")
-    sgnAlaExt.transform = tr.translate(-0.7,-0.001,-0.001)
+    sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(0)])#<-rot2
     sgnAlaExt.childs += [sgnAlaPunta]
     sgnAlaExt.childs += [sgnAlaMedio]
 
     sgnAlaCompleta = sg.SceneGraphNode("alaCompleta")
-    sgnAlaCompleta.transform = tr.identity()
+    sgnAlaCompleta.transform = tr.rotationY(0)#<-rot3
     sgnAlaCompleta.childs += [sgnAlaExt]
     sgnAlaCompleta.childs += [sgnAlaBase]
 

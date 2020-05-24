@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
         # Obteniendo la posición del mouse
         [mouseX, mouseY] = glfw.get_cursor_pos(window)
-        mouseX = -2*mouseX/width + 1
+        mouseX = 2*mouseX/width - 1
         mouseY = -2*mouseY/height + 1
 
         # Movimiento de la cámara

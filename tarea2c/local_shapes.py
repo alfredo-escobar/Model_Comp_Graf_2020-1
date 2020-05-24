@@ -1,10 +1,16 @@
 # coding=utf-8
 
+import glfw
+from OpenGL.GL import *
+import OpenGL.GL.shaders
 import numpy as np
+import sys
+
 import transformations as tr
 import basic_shapes as bs
 import scene_graph as sg
 import easy_shaders as es
+
 
 def createColorTriangleIndexation(start_index, a, b, c, color):
     # Defining locations and colors for each vertex of the shape    
@@ -93,7 +99,8 @@ def createColorNormalsQuadIndexation(start_index, a, b, c, d, color):
     return (vertices, indices)
 
 
-# Cuerpo del pájaro
+# CREACIÓN DE GPU SHAPES
+
 def birdBody(color):
 
     vertices = []
@@ -128,7 +135,6 @@ def birdBody(color):
     return bs.Shape(vertices, indices)
 
 
-# Secciones de las alas
 def alaBase(color):
 
     vertices = []
@@ -323,6 +329,173 @@ def pico(color):
     return bs.Shape(vertices, indices)
 
 
+def createTextureCubeMap(image_filename):
+
+    # Defining locations and texture coordinates for each vertex of the shape  
+    vertices = [
+    #   positions         tex coords
+    # Z+:
+        -0.5, -0.5,  0.5, 1/4,   0,
+         0.5, -0.5,  0.5, 1/2,   0,
+         0.5,  0.5,  0.5, 1/2, 1/3,
+        -0.5,  0.5,  0.5, 1/4, 1/3,
+
+    # Z-:
+        -0.5, -0.5, -0.5, 1/4,   1,
+         0.5, -0.5, -0.5, 1/2,   1,
+         0.5,  0.5, -0.5, 1/2, 2/3,
+        -0.5,  0.5, -0.5, 1/4, 2/3,
+        
+    # X+:
+         0.5, -0.5, -0.5, 3/4, 2/3,
+         0.5,  0.5, -0.5, 1/2, 2/3,
+         0.5,  0.5,  0.5, 1/2, 1/3,
+         0.5, -0.5,  0.5, 3/4, 1/3,
+ 
+    # X-:
+        -0.5, -0.5, -0.5,   0, 2/3,
+        -0.5,  0.5, -0.5, 1/4, 2/3,
+        -0.5,  0.5,  0.5, 1/4, 1/3,
+        -0.5, -0.5,  0.5,   0, 1/3,
+
+    # Y+:
+        -0.5,  0.5, -0.5, 1/4, 2/3,
+         0.5,  0.5, -0.5, 1/2, 2/3,
+         0.5,  0.5,  0.5, 1/2, 1/3,
+        -0.5,  0.5,  0.5, 1/4, 1/3,
+
+    # Y-:
+        -0.5, -0.5, -0.5,   1, 2/3,
+         0.5, -0.5, -0.5, 3/4, 2/3,
+         0.5, -0.5,  0.5, 3/4, 1/3,
+        -0.5, -0.5,  0.5,   1, 1/3
+        ]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+          0, 1, 2, 2, 3, 0, # Z+
+          7, 6, 5, 5, 4, 7, # Z-
+          8, 9,10,10,11, 8, # X+
+         15,14,13,13,12,15, # X-
+         19,18,17,17,16,19, # Y+
+         20,21,22,22,23,20] # Y-
+
+    return bs.Shape(vertices, indices, image_filename)
+
+
+def createTextureInnerNormalsCubeMap(image_filename):
+
+    # Defining locations and texture coordinates for each vertex of the shape  
+    vertices = [
+    #   positions         tex coords   normals
+    # Z+:
+        -0.5, -0.5,  0.5, 1/4,   0,   0,0,-1,
+         0.5, -0.5,  0.5, 1/2,   0,   0,0,-1,
+         0.5,  0.5,  0.5, 1/2, 1/3,   0,0,-1,
+        -0.5,  0.5,  0.5, 1/4, 1/3,   0,0,-1,
+
+    # Z-:
+        -0.5, -0.5, -0.5, 1/4,   1,    0,0,1,
+         0.5, -0.5, -0.5, 1/2,   1,    0,0,1,
+         0.5,  0.5, -0.5, 1/2, 2/3,    0,0,1,
+        -0.5,  0.5, -0.5, 1/4, 2/3,    0,0,1,
+        
+    # X+:
+         0.5, -0.5, -0.5, 3/4, 2/3,   -1,0,0,
+         0.5,  0.5, -0.5, 1/2, 2/3,   -1,0,0,
+         0.5,  0.5,  0.5, 1/2, 1/3,   -1,0,0,
+         0.5, -0.5,  0.5, 3/4, 1/3,   -1,0,0,
+ 
+    # X-:
+        -0.5, -0.5, -0.5,   0, 2/3,    1,0,0,
+        -0.5,  0.5, -0.5, 1/4, 2/3,    1,0,0,
+        -0.5,  0.5,  0.5, 1/4, 1/3,    1,0,0,
+        -0.5, -0.5,  0.5,   0, 1/3,    1,0,0,
+
+    # Y+:
+        -0.5,  0.5, -0.5, 1/4, 2/3,   0,-1,0,
+         0.5,  0.5, -0.5, 1/2, 2/3,   0,-1,0,
+         0.5,  0.5,  0.5, 1/2, 1/3,   0,-1,0,
+        -0.5,  0.5,  0.5, 1/4, 1/3,   0,-1,0,
+
+    # Y-:
+        -0.5, -0.5, -0.5,   1, 2/3,    0,1,0,
+         0.5, -0.5, -0.5, 3/4, 2/3,    0,1,0,
+         0.5, -0.5,  0.5, 3/4, 1/3,    0,1,0,
+        -0.5, -0.5,  0.5,   1, 1/3,    0,1,0
+        ]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+          0, 1, 2, 2, 3, 0, # Z+
+          7, 6, 5, 5, 4, 7, # Z-
+          8, 9,10,10,11, 8, # X+
+         15,14,13,13,12,15, # X-
+         19,18,17,17,16,19, # Y+
+         20,21,22,22,23,20] # Y-
+
+    return bs.Shape(vertices, indices, image_filename)
+
+
+def createTextureOuterNormalsCubeMap(image_filename):
+
+    # Defining locations and texture coordinates for each vertex of the shape  
+    vertices = [
+    #   positions         tex coords   normals
+    # Z+:
+        -0.5, -0.5,  0.5, 1/4,   0,    0,0,1,
+         0.5, -0.5,  0.5, 1/2,   0,    0,0,1,
+         0.5,  0.5,  0.5, 1/2, 1/3,    0,0,1,
+        -0.5,  0.5,  0.5, 1/4, 1/3,    0,0,1,
+
+    # Z-:
+        -0.5, -0.5, -0.5, 1/4,   1,   0,0,-1,
+         0.5, -0.5, -0.5, 1/2,   1,   0,0,-1,
+         0.5,  0.5, -0.5, 1/2, 2/3,   0,0,-1,
+        -0.5,  0.5, -0.5, 1/4, 2/3,   0,0,-1,
+        
+    # X+:
+         0.5, -0.5, -0.5, 3/4, 2/3,    1,0,0,
+         0.5,  0.5, -0.5, 1/2, 2/3,    1,0,0,
+         0.5,  0.5,  0.5, 1/2, 1/3,    1,0,0,
+         0.5, -0.5,  0.5, 3/4, 1/3,    1,0,0,
+ 
+    # X-:
+        -0.5, -0.5, -0.5,   0, 2/3,   -1,0,0,
+        -0.5,  0.5, -0.5, 1/4, 2/3,   -1,0,0,
+        -0.5,  0.5,  0.5, 1/4, 1/3,   -1,0,0,
+        -0.5, -0.5,  0.5,   0, 1/3,   -1,0,0,
+
+    # Y+:
+        -0.5,  0.5, -0.5, 1/4, 2/3,    0,1,0,
+         0.5,  0.5, -0.5, 1/2, 2/3,    0,1,0,
+         0.5,  0.5,  0.5, 1/2, 1/3,    0,1,0,
+        -0.5,  0.5,  0.5, 1/4, 1/3,    0,1,0,
+
+    # Y-:
+        -0.5, -0.5, -0.5,   1, 2/3,   0,-1,0,
+         0.5, -0.5, -0.5, 3/4, 2/3,   0,-1,0,
+         0.5, -0.5,  0.5, 3/4, 1/3,   0,-1,0,
+        -0.5, -0.5,  0.5,   1, 1/3,   0,-1,0
+        ]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+          0, 1, 2, 2, 3, 0, # Z+
+          7, 6, 5, 5, 4, 7, # Z-
+          8, 9,10,10,11, 8, # X+
+         15,14,13,13,12,15, # X-
+         19,18,17,17,16,19, # Y+
+         20,21,22,22,23,20] # Y-
+
+    return bs.Shape(vertices, indices, image_filename)
+
+
+# MODELACIÓN DEL AVE CON SCENE GRAPH NODES
+
 def crearAve():
 
     color1 = [70/255, 205/255, 195/255]
@@ -392,4 +565,52 @@ def crearAve():
     sgnAve.childs += [sgnPico]
 
     return sgnAve
+
+
+# FUNCIONES DE INSTANCING
+
+def variasAves(n):
     
+    aveEscalada = sg.SceneGraphNode("aveEscalada")
+    aveEscalada.transform = tr.uniformScale(0.1)
+    aveEscalada.childs += [crearAve()]
+
+    aves = sg.SceneGraphNode("aves")
+
+    baseName = "ave"
+    for i in range(n):
+        posY = (-i//2) * 0.4
+        posX = posY * ((-1)**(i%2)) * 0.7
+        
+        newNode = sg.SceneGraphNode(baseName + str(i))
+        newNode.transform = tr.translate(posX,posY,0)
+        newNode.childs += [aveEscalada]
+        aves.childs += [newNode]
+
+    return aves
+
+
+def palos():
+    palo = es.toGPUShape(createTextureOuterNormalsCubeMap("palo.png"), GL_REPEAT, GL_LINEAR)
+    
+    paloEscalado = sg.SceneGraphNode("paloEscalado")
+    paloEscalado.transform = tr.scale(0.09, 0.09, 0.404)
+    paloEscalado.childs += [palo]
+
+    palos = sg.SceneGraphNode("palos")
+
+    baseName = "palo"
+    for i in range(5):
+        if i == 4:
+            posX = -0.075
+            posY = -0.445
+        else:
+            posX = 0.445 * ((-1)**(i%2))
+            posY = 0.445 * ((-1)**(i//2))
+        
+        newNode = sg.SceneGraphNode(baseName + str(i))
+        newNode.transform = tr.translate(posX,posY,-0.298)
+        newNode.childs += [paloEscalado]
+        palos.childs += [newNode]
+
+    return palos

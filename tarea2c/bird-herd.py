@@ -5,6 +5,7 @@ from OpenGL.GL import *
 import OpenGL.GL.shaders
 import numpy as np
 import sys
+import csv
 
 import transformations as tr
 import basic_shapes as bs
@@ -13,6 +14,8 @@ import easy_shaders as es
 import lighting_shaders as ls
 import local_shapes as locs
 
+archivoCVS = sys.argv[1]
+#archivoCVS = 'path.csv'
 
 LIGHT_FLAT    = 0
 LIGHT_GOURAUD = 1
@@ -46,7 +49,72 @@ def on_key(window, key, scancode, action, mods):
 
     elif key == glfw.KEY_ESCAPE:
         sys.exit()
+
+
+def generateT(t):
+    return np.array([[1, t, t**2, t**3]]).T
+
+
+def catmullRomMatrix(P_1, P0, P1, P2):
+    
+    # Generate a matrix concatenating the columns
+    G = np.concatenate((P_1, P0, P1, P2), axis=1)
+    
+    # Hermite base matrix is a constant
+    Mc = 0.5 * np.array([[0, -1, 2, -1], [2, 0, -5, 3], [0, 1, 4, -3], [0, 0, -1, 1]])    
+    
+    return np.matmul(G, Mc)
+    
+
+# M is the cubic curve matrix, N is the number of samples between 0 and 1
+def evalCurve(M, N, start):
+    # The parameter t should move between 0 and 1
+    ts = np.linspace(0.0, 1.0, N)
+    
+    # The computed value in R3 for each sample will be stored here
+    curve = np.ndarray(shape=((N-start), 3), dtype=float)
+    
+    for i in range(start, len(ts)):
+        T = generateT(ts[i])
+        curve[(i-start), 0:3] = np.matmul(M, T).T
         
+    return curve
+
+
+def caminoCompleto(puntos, N):
+    puntos = np.array(puntos)
+    row = puntos.shape[0]
+    
+    trayectoria = np.array([[]])
+    for i in range(1,row-2):
+        C_1 = np.array([puntos[i-1]]).T
+        C0 = np.array([puntos[i]]).T
+        C1 = np.array([puntos[i+1]]).T
+        C2 = np.array([puntos[i+2]]).T
+        GMc = catmullRomMatrix(C_1, C0, C1, C2)
+        if i==1:
+            catmullRomCurve = evalCurve(GMc, N, 0)
+            trayectoria = catmullRomCurve
+        else:
+            catmullRomCurve = evalCurve(GMc, N, 1)
+            trayectoria = np.concatenate((trayectoria, catmullRomCurve))
+
+    return trayectoria
+
+
+def anguloVuelo(herdPos,herdPosPrevia,anguloPrevio):
+    vecDir = np.array([-herdPos[0] + herdPosPrevia[0],
+                       herdPos[1] - herdPosPrevia[1]])
+    if vecDir[1] == 0:
+        if herdPos[0] < herdPosPrevia[0]:
+            return np.pi/2
+        elif herdPos[0] > herdPosPrevia[0]:
+            return 3*np.pi/2
+        else:
+            return anguloPrevio
+    else:
+        return np.arctan2(vecDir[0],vecDir[1])
+
 
 if __name__ == "__main__":
 
@@ -54,8 +122,8 @@ if __name__ == "__main__":
     if not glfw.init():
         sys.exit()
 
-    width = 1120
-    height = 630
+    width = 1056
+    height = 594
 
     window = glfw.create_window(width, height, "Bird Herd", None, None)
 
@@ -95,7 +163,6 @@ if __name__ == "__main__":
     # Creating shapes on GPU memory
     cantAves = 5
     aves = locs.variasAves(cantAves)
-    aves.transform = tr.translate(0,1.5,0.5)
 
     cubeMap1 = es.toGPUShape(locs.createTextureInnerNormalsCubeMap("cubemap1.png"), GL_REPEAT, GL_LINEAR)
     cubeMap2 = es.toGPUShape(locs.createTextureCubeMap("cubemap2.png"), GL_REPEAT, GL_LINEAR)
@@ -107,6 +174,23 @@ if __name__ == "__main__":
     rot3 = 0 # Ala completa
     alas_theta = 0
 
+    # Generar trayectoria a partir de archivo .csv
+    puntos = []
+    with open(archivoCVS, newline='') as csvfile:
+        csvReader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in csvReader:
+            fila = []
+            for number in row:
+                fila.append(float(number))
+            puntos.append(fila)
+
+    trayectoria = caminoCompleto(puntos, 400)
+    herdPosIndex = 1 # Índice para la lista "trayectoria"
+    herdPosPrevia = trayectoria[herdPosIndex-1]
+    herdPos = trayectoria[herdPosIndex]
+    herdAngulo = 0
+    
+    # Posición de la fuente de luz
     sun = np.array([7.75, 2.86, 5.62])
 
     t0 = glfw.get_time()
@@ -129,9 +213,13 @@ if __name__ == "__main__":
         mouseY = -2*mouseY/height + 1
 
         # Movimiento de la cámara
-        if (mouseX < 1) and (mouseX > -1) and (mouseY < 1) and (mouseY > -1):
-            camera_theta = np.pi/2 - np.pi*mouseX
-            camera_gamma = (np.pi/2 - np.pi*mouseY/2) * 0.99
+        camera_theta = np.pi/2 - np.pi*mouseX
+        if mouseY >= 1:
+            camera_gamma = 0.001
+        elif mouseY <= -1:
+            camera_gamma = np.pi - 0.001
+        else:
+            camera_gamma = np.pi/2 - np.pi*mouseY/2
         
         projection = tr.ortho(-1, 1, -1, 1, 0.1, 100)
         projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
@@ -148,8 +236,6 @@ if __name__ == "__main__":
             np.array([0,0,1])
         )
 
-        rotation_theta = glfw.get_time()
-
         axis = np.array([1,-1,1])
         axis = axis / np.linalg.norm(axis)
         model = tr.identity()
@@ -161,13 +247,22 @@ if __name__ == "__main__":
         rot3 = np.sin(alas_theta) * 0.65
         
         sgnAlaPunta = sg.findNode(aves, "alaPunta")
-        sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(rot1)])
+        sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,0.024),tr.rotationY(rot1)])
 
         sgnAlaExt = sg.findNode(aves, "alaExt")
-        sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(rot2)])
+        sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,0.029),tr.rotationY(rot2)])
         
         sgnAlaCompleta = sg.findNode(aves, "alaCompleta")
         sgnAlaCompleta.transform = tr.rotationY(rot3)
+        
+        # Traslación de las aves
+        herdPosIndex += dt * 24
+        if herdPosIndex < len(trayectoria):
+            herdPosPrevia = trayectoria[int(herdPosIndex)-1]
+            herdPos = trayectoria[int(herdPosIndex)]
+            herdAngulo = anguloVuelo(herdPos, herdPosPrevia, herdAngulo)
+            aves.transform = tr.matmul([tr.translate(herdPos[0],herdPos[1],herdPos[2]),
+                                        tr.rotationZ(herdAngulo)])
 
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

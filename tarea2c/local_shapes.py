@@ -169,14 +169,14 @@ def alaMedio(color):
     indices = []
     start_index = 0
 
-    a = np.array([0, 0.4, 0.1])
-    b = np.array([-0.7, 0.4, 0.1])
-    c = np.array([-0.7, 0.05, 0.1])
-    d = np.array([0, -0.2, 0.1])
-    e = np.array([0, 0.4, -0.04])
-    f = np.array([-0.7, 0.4, 0.01])
-    g = np.array([-0.7, 0.05, 0.01])
-    h = np.array([0, -0.2, -0.04])
+    a = np.array([0, 0.4, 0.07])
+    b = np.array([-0.7, 0.4, 0.07])
+    c = np.array([-0.7, 0.05, 0.07])
+    d = np.array([0, -0.2, 0.07])
+    e = np.array([0, 0.4, -0.07])
+    f = np.array([-0.7, 0.4, -0.02])
+    g = np.array([-0.7, 0.05, -0.02])
+    h = np.array([0, -0.2, -0.07])
 
     cuadrilateros = [[a,b,c,d], [a,e,f,b], [b,f,g,c],
                      [c,g,h,d], [d,h,e,a], [e,h,g,f]]
@@ -197,11 +197,11 @@ def alaPunta(color):
     indices = []
     start_index = 0
 
-    a = np.array([0, 0.4, 0.1])
-    b = np.array([-0.7, 0.4, 0.1])
-    c = np.array([0, 0.05, 0.1])
-    d = np.array([0, 0.4, 0.01])
-    e = np.array([0, 0.05, 0.01])
+    a = np.array([0, 0.4, 0.045])
+    b = np.array([-0.7, 0.4, 0.045])
+    c = np.array([0, 0.05, 0.045])
+    d = np.array([0, 0.4, -0.045])
+    e = np.array([0, 0.05, -0.045])
 
     triangulos = [[a,b,c], [c,b,e], [e,b,d], [d,b,a]]
 
@@ -517,7 +517,7 @@ def crearAve():
     sgnBirdBody.childs += [gpuBirdBody]
 
     sgnAlaPunta = sg.SceneGraphNode("alaPunta")
-    sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(0)])#<-rot1
+    sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,0.024),tr.rotationY(0)])#<-rot1
     sgnAlaPunta.childs += [gpuAlaPunta]
 
     sgnAlaMedio = sg.SceneGraphNode("alaMedio")
@@ -539,7 +539,7 @@ def crearAve():
     sgnPico.childs += [gpuPico]
 
     sgnAlaExt = sg.SceneGraphNode("alaExt")
-    sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(0)])#<-rot2
+    sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,0.029),tr.rotationY(0)])#<-rot2
     sgnAlaExt.childs += [sgnAlaPunta]
     sgnAlaExt.childs += [sgnAlaMedio]
 
@@ -581,9 +581,10 @@ def variasAves(n):
     for i in range(n):
         posY = (-i//2) * 0.4
         posX = posY * ((-1)**(i%2)) * 0.7
+        centro = (n//2) * 0.2
         
         newNode = sg.SceneGraphNode(baseName + str(i))
-        newNode.transform = tr.translate(posX,posY,0)
+        newNode.transform = tr.translate(posX,posY+centro,0)
         newNode.childs += [aveEscalada]
         aves.childs += [newNode]
 

@@ -155,10 +155,10 @@ if __name__ == "__main__":
             rot3 = mouseY*0.8
         
         sgnAlaPunta = sg.findNode(sgnAve, "alaPunta")
-        sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(rot1)])
+        sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,0.024),tr.rotationY(rot1)])
 
         sgnAlaExt = sg.findNode(sgnAve, "alaExt")
-        sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,-0.001),tr.rotationY(rot2)])
+        sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,0.029),tr.rotationY(rot2)])
         
         sgnAlaCompleta = sg.findNode(sgnAve, "alaCompleta")
         sgnAlaCompleta.transform = tr.rotationY(rot3)

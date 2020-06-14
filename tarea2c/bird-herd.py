@@ -184,7 +184,7 @@ if __name__ == "__main__":
                 fila.append(float(number))
             puntos.append(fila)
 
-    trayectoria = caminoCompleto(puntos, 400)
+    trayectoria = caminoCompleto(puntos, 200)
     herdPosIndex = 1 # Índice para la lista "trayectoria"
     herdPosPrevia = trayectoria[herdPosIndex-1]
     herdPos = trayectoria[herdPosIndex]
@@ -220,8 +220,7 @@ if __name__ == "__main__":
             camera_gamma = np.pi - 0.001
         else:
             camera_gamma = np.pi/2 - np.pi*mouseY/2
-        
-        projection = tr.ortho(-1, 1, -1, 1, 0.1, 100)
+
         projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
 
         camX = 5 * np.cos(camera_theta) * np.sin(camera_gamma)
@@ -236,8 +235,6 @@ if __name__ == "__main__":
             np.array([0,0,1])
         )
 
-        axis = np.array([1,-1,1])
-        axis = axis / np.linalg.norm(axis)
         model = tr.identity()
 
         # Movimiento de las alas del ave

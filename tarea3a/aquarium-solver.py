@@ -6,7 +6,9 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spsolve
 import json
 
-setup = json.load(open("problem-setup.json"))
+archivoJSON = sys.argv[1]
+#archivoJSON = "problem-setup.json"
+setup = json.load(open(archivoJSON))
 
 H = setup["height"]
 W = setup["width"]
@@ -15,7 +17,8 @@ h = 0.25
 
 # Boundary Dirichlet Conditions:
 TOP = setup["ambient_temperature"]
-#heater_a = setup["heater_a"]
+HEAT_A = setup["heater_a"]
+HEAT_B = setup["heater_b"]
 
 # Condición Neumann
 F = setup["window_loss"]
@@ -74,6 +77,18 @@ for i in range(ni):
                 A[p, p] = -6
                 b[p] = 0
 
+            # Heater A
+            elif i >= L/(5*h) and i <= 2*L/(5*h) and j >= W/(3*h) and j <= 2*W/(3*h) and\
+               k == 0:
+                A[p, p] = 1
+                b[p] = HEAT_A
+
+            # Heater B
+            elif i >= 3*L/(5*h) and i <= 4*L/(5*h) and j >= W/(3*h) and j <= 2*W/(3*h) and\
+               k == 0:
+                A[p, p] = 1
+                b[p] = HEAT_B
+
             # CARAS --------------------------------------------------
 
             # Top
@@ -87,7 +102,7 @@ for i in range(ni):
                 A[p, p] = -6
                 b[p] = -TOP
 
-            # Bottom
+            # Bottom (excepto heaters)
             elif i >= 1 and i <= ni-2 and j >= 1 and j <= nj-2 and\
                k == 0:
                 A[p, p_up] = 2
@@ -339,15 +354,15 @@ for i in range(ni):
 # Solving our system
 x = spsolve(A, b)
 
-# Now we return our solution to the 2d discrete domain
-# In this matrix we will store the solution in the 2d domain
+# Now we return our solution to the 3D discrete domain
+# In this matrix we will store the solution in the 3D domain
 u = np.zeros((ni,nj,nk+1))
 
 for p in range(0, N):
     i,j,k = getIJK(p)
     u[i,j,k] = x[p]
 
-# Parte superior a temperatura ambiente
+# Parte superior, a temperatura ambiente
 for i in range(ni):
     for j in range(nj):
         u[i, j, nk] = TOP

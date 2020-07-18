@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import numpy as np
-import matplotlib.pyplot as mpl
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spsolve
 import json

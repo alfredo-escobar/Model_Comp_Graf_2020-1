@@ -217,3 +217,53 @@ def crearPez(image_filename):
 
     return sgnPez
 
+
+def variosPeces(n, image_filename):
+    
+    pezEscalado = sg.SceneGraphNode("pezEscalado")
+    pezEscalado.transform = tr.uniformScale(0.17)
+    pezEscalado.childs += [crearPez(image_filename)]
+
+    peces = sg.SceneGraphNode("peces")
+
+    baseName = "pez"
+    for i in range(n):        
+        newNode = sg.SceneGraphNode(baseName + str(i))
+        newNode.childs += [pezEscalado]
+        peces.childs += [newNode]
+
+    return peces
+
+
+def crearAcuario(L, W, H, image_filename):
+    
+    gpuAcuario = es.toGPUShape(bs.createTextureCube(image_filename), GL_REPEAT, GL_LINEAR)
+    
+    sgnAcuario = sg.SceneGraphNode("sgnAcuario")
+    sgnAcuario.transform = tr.scale(L,W,H)
+    sgnAcuario.childs += [gpuAcuario]
+
+    return sgnAcuario
+
+    
+def bordeAcuario(L, W, H):
+
+    # Defining the location and colors of each vertex  of the shape
+    vertices = [
+    #    positions           colors
+         -L/2,  -W/2,  -H/2, 0.428, 0.753, 1.0,
+         -L/2,  -W/2,   H/2, 0.428, 0.753, 1.0,
+         -L/2,   W/2,  -H/2, 0.428, 0.753, 1.0,
+         -L/2,   W/2,   H/2, 0.428, 0.753, 1.0,
+          L/2,  -W/2,  -H/2, 0.428, 0.753, 1.0,
+          L/2,  -W/2,   H/2, 0.428, 0.753, 1.0,
+          L/2,   W/2,  -H/2, 0.428, 0.753, 1.0,
+          L/2,   W/2,   H/2, 0.428, 0.753, 1.0]
+
+    # This shape is meant to be drawn with GL_LINES,
+    # i.e. every 2 indices, we have 1 line.
+    indices = [0,4, 4,6, 6,2, 2,0,
+               1,5, 5,7, 7,3, 3,1,
+               0,1, 4,5, 6,7, 2,3]
+
+    return bs.Shape(vertices, indices)

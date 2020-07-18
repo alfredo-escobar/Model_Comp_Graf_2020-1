@@ -18,7 +18,7 @@ import lighting_shaders as ls
 import local_shapes as locs
 
 print("Cargar archivo de textura:")
-texPez = input(">> peces/")
+texPez = input(">> texturas/")
 
 LIGHT_FLAT    = 0
 LIGHT_GOURAUD = 1
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     glEnable(GL_DEPTH_TEST)
 
     # Creating shapes on GPU memory
-    texture = Image.open("peces/" + texPez)
+    texture = Image.open("texturas/" + texPez)
     gpuAxis = es.toGPUShape(bs.createAxis(4))
     gpuFishBody = es.toGPUShape(locs.fishBody(texture), GL_REPEAT, GL_LINEAR)
     gpuCola = es.toGPUShape(locs.cola(texture), GL_REPEAT, GL_LINEAR)

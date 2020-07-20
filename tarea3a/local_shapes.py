@@ -221,7 +221,7 @@ def crearPez(image_filename):
 def variosPeces(n, image_filename):
     
     pezEscalado = sg.SceneGraphNode("pezEscalado")
-    pezEscalado.transform = tr.uniformScale(0.17)
+    pezEscalado.transform = tr.matmul([tr.uniformScale(0.11),tr.translate(0,0.15,0)])
     pezEscalado.childs += [crearPez(image_filename)]
 
     peces = sg.SceneGraphNode("peces")

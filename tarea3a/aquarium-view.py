@@ -163,9 +163,9 @@ if __name__ == "__main__":
 
     # Creating shapes on GPU memory
     acuarioTex = Image.open("texturas/acuario.png")
-    acuario = locs.crearAcuario(L,W,H, acuarioTex)
-    acuarioBorde = es.toGPUShape(locs.bordeAcuario(L, W, H))
-    heaters = locs.heaters(L,W,H)
+    acuario = locs.crearAcuario(L-h,W-h,H-h, acuarioTex)
+    acuarioBorde = es.toGPUShape(locs.bordeAcuario(L-h, W-h, H-h))
+    heaters = locs.heaters(L-h,W-h,H-h)
     
     naranjoTex = Image.open("texturas/naranjo.jpg")
     azulTex = Image.open("texturas/azul.jpg")

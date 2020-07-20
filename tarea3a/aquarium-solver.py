@@ -1,12 +1,15 @@
 # coding=utf-8
 
 import numpy as np
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, lil_matrix
 from scipy.sparse.linalg import spsolve
 import json
+import sys
 
-archivoJSON = sys.argv[1]
-#archivoJSON = "problem-setup.json"
+if len(sys.argv) == 1:
+    archivoJSON = input("Archivo .json a cargar: ")
+else:
+    archivoJSON = sys.argv[1]
 setup = json.load(open(archivoJSON))
 
 H = setup["height"]
@@ -43,10 +46,10 @@ def getIJK(p):
     return (i, j, k)
 
 # In this matrix we will write all the coefficients of the unknowns
-A = csc_matrix((N, N))
+A = lil_matrix((N, N))
 
 # In this vector we will write all the right side of the equations
-b = csc_matrix((N,1))
+b = lil_matrix((N,1))
 
 # We iterate over each point inside the domain
 # Each point has an equation associated
@@ -351,6 +354,8 @@ for i in range(ni):
 
 
 # Solving our system
+A = A.tocsc()
+b = b.tocsc()
 x = spsolve(A, b)
 
 # Now we return our solution to the 3D discrete domain

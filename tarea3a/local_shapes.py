@@ -235,6 +235,60 @@ def variosPeces(n, image_filename):
     return peces
 
 
+def createTextureVoxel(i, j, k, h, image_filename):
+    l_x = i - h/2
+    r_x = i + h/2
+    b_y = j - h/2
+    f_y = j + h/2
+    b_z = k - h/2
+    t_z = k + h/2
+    #   positions      texturePos
+    vertices = [
+    # Z+: number 1
+        l_x, b_y, t_z, 0,1,
+        r_x, b_y, t_z, 1,1,
+        r_x, f_y, t_z, 1,0,
+        l_x, f_y, t_z, 0,0,
+    # Z-: number 6
+        l_x, b_y, b_z, 0,1,
+        r_x, b_y, b_z, 1,1,
+        r_x, f_y, b_z, 1,0,
+        l_x, f_y, b_z, 0,0,
+    # X+: number 5
+        r_x, b_y, b_z, 0,1,
+        r_x, f_y, b_z, 1,1,
+        r_x, f_y, t_z, 1,0,
+        r_x, b_y, t_z, 0,0,
+    # X-: number 2
+        l_x, b_y, b_z, 0,1,
+        l_x, f_y, b_z, 1,1,
+        l_x, f_y, t_z, 1,0,
+        l_x, b_y, t_z, 0,0,
+    # Y+: number 4
+        l_x, f_y, b_z, 0,1,
+        r_x, f_y, b_z, 1,1,
+        r_x, f_y, t_z, 1,0,
+        l_x, f_y, t_z, 0,0,
+    # Y-: number 3
+        l_x, b_y, b_z, 0,1,
+        r_x, b_y, b_z, 1,1,
+        r_x, b_y, t_z, 1,0,
+        l_x, b_y, t_z, 0,0
+        ]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4,
+        4, 5, 1, 1, 0, 4,
+        6, 7, 3, 3, 2, 6,
+        5, 6, 2, 2, 1, 5,
+        7, 4, 0, 0, 3, 7]
+
+    return bs.Shape(vertices, indices, image_filename)
+
+
 def crearAcuario(L, W, H, image_filename):
     
     gpuAcuario = es.toGPUShape(bs.createTextureCube(image_filename), GL_REPEAT, GL_LINEAR)
@@ -267,3 +321,25 @@ def bordeAcuario(L, W, H):
                0,1, 4,5, 6,7, 2,3]
 
     return bs.Shape(vertices, indices)
+
+
+def heaters(L,W,H):
+    gpuHeater = es.toGPUShape(bs.createColorCube(0.428, 0.753, 1.0))
+
+    sgnHeater = sg.SceneGraphNode("sgnHeater")
+    sgnHeater.transform = tr.scale(L/5, W/3, 0.01)
+    sgnHeater.childs += [gpuHeater]
+
+    sgnHeaterA = sg.SceneGraphNode("sgnHeaterA")
+    sgnHeaterA.transform = tr.translate(-L/5, 0, -H/2 +0.01)
+    sgnHeaterA.childs += [sgnHeater]
+
+    sgnHeaterB = sg.SceneGraphNode("sgnHeaterB")
+    sgnHeaterB.transform = tr.translate(L/5, 0, -H/2 +0.01)
+    sgnHeaterB.childs += [sgnHeater]
+
+    sgnAmbosHeaters = sg.SceneGraphNode("AmbosHeaters")
+    sgnAmbosHeaters.childs += [sgnHeaterA]
+    sgnAmbosHeaters.childs += [sgnHeaterB]
+
+    return sgnAmbosHeaters

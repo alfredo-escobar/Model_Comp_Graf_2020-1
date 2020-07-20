@@ -16,8 +16,10 @@ import easy_shaders as es
 import lighting_shaders as ls
 import local_shapes as locs
 
-#archivoJSON = sys.argv[1]
-archivoJSON = "view-setup.json"
+if len(sys.argv) == 1:
+    archivoJSON = input("Archivo .json a cargar: ")
+else:
+    archivoJSON = sys.argv[1]
 setup = json.load(open(archivoJSON))
 
 # Cargar la matriz "u"
@@ -39,6 +41,8 @@ class Controller:
     def __init__(self):
         self.lightingModel = LIGHT_GOURAUD
         self.voxels = VOXELS_NONE
+        self.showFish = True
+        self.showHeaters = True
 
 
 # We will use the global controller as communication with the callback function
@@ -60,9 +64,6 @@ def on_key(window, key, scancode, action, mods):
     elif key == glfw.KEY_E:
         controller.lightingModel = LIGHT_PHONG
 
-    elif key == glfw.KEY_0:
-        controller.voxels = VOXELS_NONE
-
     elif key == glfw.KEY_A:
         controller.voxels = VOXELS_A
 
@@ -71,6 +72,15 @@ def on_key(window, key, scancode, action, mods):
 
     elif key == glfw.KEY_C:
         controller.voxels = VOXELS_C
+
+    elif key == glfw.KEY_1:
+        controller.voxels = VOXELS_NONE
+
+    elif key == glfw.KEY_2:
+        controller.showFish = not controller.showFish
+
+    elif key == glfw.KEY_3:
+        controller.showHeaters = not controller.showHeaters
 
     elif key == glfw.KEY_ESCAPE:
         sys.exit()
@@ -97,7 +107,14 @@ def zonasAptas():
 
 def LWH(h):
     global u
-    return (u.shape[0]-1)*h, (u.shape[1]-1)*h, (u.shape[2]-1)*h                
+    return (u.shape[0]-1)*h, (u.shape[1]-1)*h, (u.shape[2]-1)*h
+
+
+def merge(destinationShape, strideSize, sourceShape):
+    # current vertices are an offset for indices refering to vertices of the new shape
+    offset = len(destinationShape.vertices)
+    destinationShape.vertices += sourceShape.vertices
+    destinationShape.indices += [(offset/strideSize) + index for index in sourceShape.indices]
 
 
 if __name__ == "__main__":
@@ -148,6 +165,7 @@ if __name__ == "__main__":
     acuarioTex = Image.open("texturas/acuario.png")
     acuario = locs.crearAcuario(L,W,H, acuarioTex)
     acuarioBorde = es.toGPUShape(locs.bordeAcuario(L, W, H))
+    heaters = locs.heaters(L,W,H)
     
     naranjoTex = Image.open("texturas/naranjo.jpg")
     azulTex = Image.open("texturas/azul.jpg")
@@ -157,11 +175,38 @@ if __name__ == "__main__":
     peces_B = locs.variosPeces(setup["n_b"],azulTex)
     peces_C = locs.variosPeces(setup["n_c"],negroTex)
 
+    [aptas_A, aptas_B, aptas_C] = zonasAptas()
+
+    naranjoVox = Image.open("texturas/voxNaranjo.png")
+    azulVox = Image.open("texturas/voxAzul.png")
+    negroVox = Image.open("texturas/voxNegro.png")
+
+    isoA = bs.Shape([], [], naranjoVox)
+    for p in aptas_A:
+        [i, j, k] = p
+        temp_shape = locs.createTextureVoxel(i*h-L/2, j*h-W/2, k*h-H/2, h, naranjoVox)
+        merge(destinationShape=isoA, strideSize=5, sourceShape=temp_shape)
+        
+    isoB = bs.Shape([], [], azulVox)
+    for p in aptas_B:
+        [i, j, k] = p
+        temp_shape = locs.createTextureVoxel(i*h-L/2, j*h-W/2, k*h-H/2, h, azulVox)
+        merge(destinationShape=isoB, strideSize=5, sourceShape=temp_shape)
+        
+    isoC = bs.Shape([], [], negroVox)
+    for p in aptas_C:
+        [i, j, k] = p
+        temp_shape = locs.createTextureVoxel(i*h-L/2, j*h-W/2, k*h-H/2, h, negroVox)
+        merge(destinationShape=isoC, strideSize=5, sourceShape=temp_shape)
+
+    gpuSurfaceA = es.toGPUShape(isoA, GL_REPEAT, GL_LINEAR)
+    gpuSurfaceB = es.toGPUShape(isoB, GL_REPEAT, GL_LINEAR)
+    gpuSurfaceC = es.toGPUShape(isoC, GL_REPEAT, GL_LINEAR)
+
     pez_theta = 0
     cola_theta = 0
 
-    # Posiciones para peces y voxeles
-    [aptas_A, aptas_B, aptas_C] = zonasAptas()
+    # Posiciones y ángulos para peces
     ocupadas = []
 
     for p in range(setup["n_a"]):
@@ -222,10 +267,10 @@ if __name__ == "__main__":
         if (glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS):
             camera_theta += 2* dt
 
-        if (glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS) and (camera_gamma > 0.05):
+        if (glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS) and (camera_gamma > 0.1):
             camera_gamma -= 2 * dt
 
-        if (glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS) and (camera_gamma < np.pi-0.05):
+        if (glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS) and (camera_gamma < np.pi-0.1):
             camera_gamma += 2 * dt
 
         if (glfw.get_key(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS) and (camera_zoom > 2):
@@ -273,16 +318,16 @@ if __name__ == "__main__":
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         # Selecting the shape to display
-##        if controller.voxels == VOXELS_NONE:
-##            gpuShape = 
-##        elif controller.voxels == VOXELS_A:
-##            gpuShape = 
-##        elif controller.voxels == VOXELS_B:
-##            gpuShape = 
-##        elif controller.voxels == VOXELS_C:
-##            gpuShape = 
-##        else:
-##            raise Exception()
+        if controller.voxels == VOXELS_NONE:
+            gpuShape = gpuSurfaceA
+        elif controller.voxels == VOXELS_A:
+            gpuShape = gpuSurfaceA
+        elif controller.voxels == VOXELS_B:
+            gpuShape = gpuSurfaceB
+        elif controller.voxels == VOXELS_C:
+            gpuShape = gpuSurfaceC
+        else:
+            raise Exception()
 
         # Selecting the lighting shader program
         if controller.lightingModel == LIGHT_FLAT:
@@ -306,6 +351,8 @@ if __name__ == "__main__":
 
         # Drawing
         mvpPipeline.drawShape(acuarioBorde, GL_LINES)
+        if controller.showHeaters:
+            sg.drawSceneGraphNode(heaters, mvpPipeline, "model")
 
         # Texture Lighting Pipeline Drawing ---------------------------------------------------------------------------
         glUseProgram(textureLightingPipeline.shaderProgram)
@@ -332,9 +379,10 @@ if __name__ == "__main__":
         glUniformMatrix4fv(glGetUniformLocation(textureLightingPipeline.shaderProgram, "model"), 1, GL_TRUE, model)
 
         # Drawing
-        sg.drawSceneGraphNode(peces_A, textureLightingPipeline, "model")
-        sg.drawSceneGraphNode(peces_B, textureLightingPipeline, "model")
-        sg.drawSceneGraphNode(peces_C, textureLightingPipeline, "model")
+        if controller.showFish:
+            sg.drawSceneGraphNode(peces_A, textureLightingPipeline, "model")
+            sg.drawSceneGraphNode(peces_B, textureLightingPipeline, "model")
+            sg.drawSceneGraphNode(peces_C, textureLightingPipeline, "model")
 
         # Texture MVP Pipeline Drawing --------------------------------------------------------------------------------
         glUseProgram(texturemvpPipeline.shaderProgram)
@@ -345,7 +393,11 @@ if __name__ == "__main__":
         glUniformMatrix4fv(glGetUniformLocation(texturemvpPipeline.shaderProgram, "model"), 1, GL_TRUE, model)
 
         # Drawing
-        sg.drawSceneGraphNode(acuario, texturemvpPipeline, "model")
+        if controller.voxels == VOXELS_NONE:
+            sg.drawSceneGraphNode(acuario, texturemvpPipeline, "model")
+        else:
+            texturemvpPipeline.drawShape(gpuShape)
+        
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

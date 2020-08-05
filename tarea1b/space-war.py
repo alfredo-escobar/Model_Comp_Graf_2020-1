@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Space War Beta 2
+Space War Beta 2.1
 Alfredo Escobar
 CC3501-1
 """
@@ -18,7 +18,10 @@ import scene_graph as sg
 import easy_shaders as es
 from game_shapes import *
 
-N = int(sys.argv[1])
+if len(sys.argv) == 1:
+    N = int(input("Cantidad de enemigos: "))
+else:
+    N = int(sys.argv[1])
 
 class Controller:
     def __init__(self):
@@ -194,7 +197,7 @@ if __name__ == "__main__":
     width = 450
     height = 600
 
-    window = glfw.create_window(width, height, "Space War Beta 2", None, None)
+    window = glfw.create_window(width, height, "Space War", None, None)
 
     if not window:
         glfw.terminate()

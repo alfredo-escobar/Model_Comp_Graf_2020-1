@@ -496,7 +496,7 @@ def createTextureOuterNormalsCubeMap(image_filename):
 
 # MODELACIÓN DEL AVE CON SCENE GRAPH NODES
 
-def crearAve():
+def crearAve(escala = 1):
 
     color1 = [70/255, 205/255, 195/255]
     color2 = [50/255, 185/255, 175/255]
@@ -557,6 +557,7 @@ def crearAve():
     sgnAlaDer.childs += [sgnAlaCompleta]
 
     sgnAve =  sg.SceneGraphNode("ave")
+    sgnAve.transform = tr.uniformScale(escala)
     sgnAve.childs += [sgnBirdBody]
     sgnAve.childs += [sgnAlaIzq]
     sgnAve.childs += [sgnAlaDer]
@@ -570,11 +571,6 @@ def crearAve():
 # FUNCIONES DE INSTANCING
 
 def variasAves(n):
-    
-    aveEscalada = sg.SceneGraphNode("aveEscalada")
-    aveEscalada.transform = tr.uniformScale(0.1)
-    aveEscalada.childs += [crearAve()]
-
     aves = sg.SceneGraphNode("aves")
 
     baseName = "ave"
@@ -585,7 +581,7 @@ def variasAves(n):
         
         newNode = sg.SceneGraphNode(baseName + str(i))
         newNode.transform = tr.translate(posX,posY+centro,0)
-        newNode.childs += [aveEscalada]
+        newNode.childs += [crearAve(0.1)]
         aves.childs += [newNode]
 
     return aves

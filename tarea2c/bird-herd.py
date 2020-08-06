@@ -14,8 +14,12 @@ import easy_shaders as es
 import lighting_shaders as ls
 import local_shapes as locs
 
-archivoCVS = sys.argv[1]
-#archivoCVS = 'path.csv'
+
+if len(sys.argv) == 1:
+    archivoCSV = input("Archivo .csv a cargar: ")
+else:
+    archivoCSV = sys.argv[1]
+
 
 LIGHT_FLAT    = 0
 LIGHT_GOURAUD = 1
@@ -115,6 +119,13 @@ def anguloVuelo(herdPos,herdPosPrevia,anguloPrevio):
     else:
         return np.arctan2(vecDir[0],vecDir[1])
 
+def anguloAltura(herdPos,herdPosPrevia):
+    vector = np.array([herdPos[0] - herdPosPrevia[0],
+                       herdPos[1] - herdPosPrevia[1],
+                       herdPos[2] - herdPosPrevia[2]])
+    modulo = np.linalg.norm(vector)
+    return np.arcsin(vector[2]/modulo)
+
 
 if __name__ == "__main__":
 
@@ -169,14 +180,14 @@ if __name__ == "__main__":
     palos = locs.palos()
 
     # Valores de rotación
-    rot1 = 0 # Punta del ala
-    rot2 = 0 # Mitad del ala
-    rot3 = 0 # Ala completa
-    alas_theta = 0
+    rot = []
+    for i in range(cantAves//2 +1):
+        #          [theta,rot1,rot2,rot3]
+        rot.append([-i * 1, 0, 0, 0])
 
     # Generar trayectoria a partir de archivo .csv
     puntos = []
-    with open(archivoCVS, newline='') as csvfile:
+    with open(archivoCSV, newline='') as csvfile:
         csvReader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in csvReader:
             fila = []
@@ -238,19 +249,24 @@ if __name__ == "__main__":
         model = tr.identity()
 
         # Movimiento de las alas del ave
-        alas_theta += dt * 1.5
-        rot1 += (rot2*0.67 - rot1) * dt * 2
-        rot2 += (rot3*0.75 - rot2) * dt * 2
-        rot3 = np.sin(alas_theta) * 0.65
-        
-        sgnAlaPunta = sg.findNode(aves, "alaPunta")
-        sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,0.024),tr.rotationY(rot1)])
+        for i in range(len(rot)):
+            rot[i][0] += dt * 1.5 #theta
+            rot[i][1] += (rot[i][2]*0.67 - rot[i][1]) * dt * 2 #rot1
+            rot[i][2] += (rot[i][3]*0.75 - rot[i][2]) * dt * 2 #rot2
+            rot[i][3] = np.sin(rot[i][0]) * 0.65 #rot3
 
-        sgnAlaExt = sg.findNode(aves, "alaExt")
-        sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,0.029),tr.rotationY(rot2)])
-        
-        sgnAlaCompleta = sg.findNode(aves, "alaCompleta")
-        sgnAlaCompleta.transform = tr.rotationY(rot3)
+        for a in range(cantAves):
+            i = (a+1)//2
+            ave_a = sg.findNode(aves, "ave" + str(a))
+
+            sgnAlaPunta = sg.findNode(ave_a, "alaPunta")
+            sgnAlaPunta.transform = tr.matmul([tr.translate(-0.7,-0.001,0.024),tr.rotationY(rot[i][1])])
+
+            sgnAlaExt = sg.findNode(ave_a, "alaExt")
+            sgnAlaExt.transform = tr.matmul([tr.translate(-0.7,-0.001,0.029),tr.rotationY(rot[i][2])])
+
+            sgnAlaCompleta = sg.findNode(ave_a, "alaCompleta")
+            sgnAlaCompleta.transform = tr.rotationY(rot[i][3])
         
         # Traslación de las aves
         herdPosIndex += dt * 24
@@ -258,8 +274,9 @@ if __name__ == "__main__":
             herdPosPrevia = trayectoria[int(herdPosIndex)-1]
             herdPos = trayectoria[int(herdPosIndex)]
             herdAngulo = anguloVuelo(herdPos, herdPosPrevia, herdAngulo)
+            herdAng2 = anguloAltura(herdPos, herdPosPrevia)
             aves.transform = tr.matmul([tr.translate(herdPos[0],herdPos[1],herdPos[2]),
-                                        tr.rotationZ(herdAngulo)])
+                                        tr.rotationZ(herdAngulo),tr.rotationX(herdAng2)])
 
         # Clearing the screen in both, color and depth
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -283,18 +300,13 @@ if __name__ == "__main__":
         glUseProgram(lightingPipeline.shaderProgram)
 
         # Setting all uniform shader variables
-
-        # White light in all components: ambient, diffuse and specular.
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "La"), 1.0, 1.0, 1.0)
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "Ld"), 1.0, 1.0, 1.0)
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "Ls"), 1.0, 1.0, 1.0)
-
-        # Object is barely visible at only ambient. Diffuse behavior is slightly red. Sparkles are white
+        
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "Ka"), 0.2, 0.2, 0.2)
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "Kd"), 0.9, 0.5, 0.5)
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "Ks"), 1.0, 1.0, 1.0)
-
-        # TO DO: Explore different parameter combinations to understand their effect!
 
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "lightPosition"), sun[0], sun[1], sun[2])
         glUniform3f(glGetUniformLocation(lightingPipeline.shaderProgram, "viewPosition"), 0, 0, 0)
@@ -327,18 +339,13 @@ if __name__ == "__main__":
         glUseProgram(textureLightingPipeline.shaderProgram)
 
         # Setting all uniform shader variables
-
-        # White light in all components: ambient, diffuse and specular.
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "La"), 1.0, 1.0, 1.0)
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "Ld"), 1.0, 1.0, 1.0)
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "Ls"), 1.0, 1.0, 1.0)
 
-        # Object is barely visible at only ambient. Diffuse behavior is slightly red. Sparkles are white
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "Ka"), 0.2, 0.2, 0.2)
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "Kd"), 0.9, 0.5, 0.5)
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "Ks"), 1.0, 1.0, 1.0)
-
-        # TO DO: Explore different parameter combinations to understand their effect!
 
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "lightPosition"), sun[0], sun[1], sun[2])
         glUniform3f(glGetUniformLocation(textureLightingPipeline.shaderProgram, "viewPosition"), 0, 0, 0)

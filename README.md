@@ -6,7 +6,7 @@ Este repositorio contiene proyectos resueltos para el ramo CC3501 Modelación y C
 
 ## Tarea 2: OpenGL3D
 
-"Migración de las aves": Escenario 3D usando curvas de Catmull-Rom e iluminación por caras y por pixeles.
+"Migración de las aves": Escenario 3D usando curvas de Catmull-Rom e iluminación por caras y por vértices.
 
 ## Tarea 3: EDPs y Visualización Científica
 

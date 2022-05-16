@@ -1,13 +1,11 @@
-Este repositorio contiene proyectos resueltos para el ramo CC3501 Modelaci髇 y Computaci髇 Gr醘ica para Ingenieros, semestre de oto駉 de 2020, Universidad de Chile.
-
 ## Tarea 1: OpenGL2D
 
 "Space War": Scrolling shooter simple usando grafos de escena.
 
 ## Tarea 2: OpenGL3D
 
-"Migraci髇 de las aves": Escenario 3D usando curvas de Catmull-Rom e iluminaci髇 por caras y por v閞tices.
+"Migraci贸n de las aves": Escenario 3D usando curvas de Catmull-Rom e iluminaci贸n por caras y por v茅rtices.
 
-## Tarea 3: EDPs y Visualizaci髇 Cient韋ica
+## Tarea 3: EDPs y Visualizaci贸n Cient铆fica
 
-"Acuario": C醠culo de temperaturas en zonas de un acuario con ecuaciones diferenciales parciales, usando stencils de 7 puntos. Visualizaci髇 de resultados en 3D.
+"Acuario": C谩lculo de temperaturas en zonas de un acuario con ecuaciones diferenciales parciales, usando stencils de 7 puntos. Visualizaci贸n de resultados en 3D.
